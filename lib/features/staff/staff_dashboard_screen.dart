@@ -28,12 +28,12 @@ class StaffDashboardScreen extends StatelessWidget {
           color: AppColors.emergency,
           child: InkWell(
             borderRadius: BorderRadius.circular(22),
-            onTap: controller.toggleIncidentView,
+            onTap: controller.openIncident,
             child: Padding(padding: const EdgeInsets.all(18), child: Row(children: [
               const Icon(Icons.emergency_rounded, color: Colors.white, size: 34),
               const SizedBox(width: 13),
-              const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('1 SOS AKTIF', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)), Text('${MockData.pilgrim} · 320 m', style: TextStyle(color: Colors.white, fontSize: 15))])),
-              TextButton(onPressed: controller.toggleIncidentView, child: const Text('LIHAT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('1 SOS AKTIF', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)), Text('${MockData.pilgrim} · ${controller.distance} m', style: const TextStyle(color: Colors.white, fontSize: 15))])),
+              TextButton(onPressed: controller.openIncident, child: const Text('LIHAT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
             ])),
           ),
         ),

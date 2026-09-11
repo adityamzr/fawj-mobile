@@ -10,18 +10,29 @@ class SearchingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final redispatch = {IncidentState.responderCancelled, IncidentState.redispatching}.contains(controller.state);
+    final cancelled = controller.state == IncidentState.responderCancelled;
+    final redispatching = controller.state == IncidentState.redispatching;
+    final title = cancelled
+        ? 'Pendamping tidak dapat melanjutkan'
+        : redispatching
+            ? 'Mencari pendamping pengganti'
+            : 'Permintaan bantuan terkirim';
+    final message = cancelled
+        ? 'Permintaan tetap aktif dan segera masuk ke siklus pencarian baru.'
+        : redispatching
+            ? 'Dispatch baru sedang berjalan. Jamaah tidak perlu membuat permintaan SOS lagi.'
+            : 'Kami sedang mencari pendamping yang dapat membantu Anda.';
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 90),
         child: Column(children: [
           Container(width: 66, height: 66, decoration: BoxDecoration(color: AppColors.emergency.withValues(alpha: .10), shape: BoxShape.circle), child: const Icon(Icons.travel_explore_rounded, color: AppColors.emergency, size: 34)),
           const SizedBox(height: 18),
-          Text(redispatch ? 'Mencari pendamping lain' : 'Permintaan bantuan terkirim', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
+          Text(title, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 10),
-          Text(redispatch ? 'Kami sedang mencari pendamping lain. Anda tidak perlu membuat permintaan baru.' : 'Kami sedang mencari pendamping yang dapat membantu Anda.', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
+          Text(message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 22),
-          const MockRescueMap(distance: 320),
+          MockRescueMap(distance: controller.distance),
           const SizedBox(height: 15),
           const Card(child: Padding(padding: EdgeInsets.all(16), child: Row(children: [
             Icon(Icons.my_location_rounded, color: AppColors.emergency),

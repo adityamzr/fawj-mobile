@@ -21,7 +21,7 @@ class RescueMapScreen extends StatelessWidget {
             Expanded(child: Text(responderView ? 'Menuju Jamaah' : (nearby ? 'Penolong sudah dekat' : 'Bantuan sedang menuju Anda'), style: Theme.of(context).textTheme.headlineMedium)),
             PopupMenuButton<String>(
               tooltip: 'Pilihan lainnya',
-              onSelected: (value) { if (value == 'hide') controller.toggleIncidentView(); if (value == 'cancel') _cancelResponder(context); },
+              onSelected: (value) { if (value == 'hide') controller.hideIncident(); if (value == 'cancel') _cancelResponder(context); },
               itemBuilder: (_) => [
                 const PopupMenuItem(value: 'hide', child: Text('Tutup tampilan map')),
                 if (responderView) const PopupMenuItem(value: 'cancel', child: Text('Tidak dapat melanjutkan')),
@@ -30,6 +30,12 @@ class RescueMapScreen extends StatelessWidget {
           ]),
           const SizedBox(height: 16),
           MockRescueMap(distance: controller.distance, responderView: responderView),
+          const SizedBox(height: 10),
+          const Row(children: [
+            Icon(Icons.gps_fixed_rounded, size: 18, color: AppColors.success),
+            SizedBox(width: 7),
+            Expanded(child: Text('Lokasi cukup akurat · Akurasi sekitar ±15 meter', style: TextStyle(fontSize: 13, color: AppColors.oliveSoft, fontWeight: FontWeight.w700))),
+          ]),
           const SizedBox(height: 16),
           Card(
             child: Padding(

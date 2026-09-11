@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/mock/mock_data.dart';
+import '../core/theme/app_colors.dart';
 import '../core/widgets/status_banner.dart';
 import '../features/emergency/emergency_type_screen.dart';
 import '../features/pilgrim_home/pilgrim_home_screen.dart';
@@ -18,107 +19,216 @@ class PrototypeShell extends StatelessWidget {
   const PrototypeShell({super.key, required this.controller});
   final PrototypeController controller;
 
+  static const pilgrimDestinations = [
+    NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Beranda'),
+    NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map_rounded), label: 'Peta'),
+    NavigationDestination(icon: Icon(Icons.luggage_outlined), selectedIcon: Icon(Icons.luggage_rounded), label: 'Perjalanan'),
+    NavigationDestination(icon: Icon(Icons.help_outline_rounded), selectedIcon: Icon(Icons.help_rounded), label: 'Bantuan'),
+    NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded), label: 'Akun'),
+  ];
+
+  static const staffDestinations = [
+    NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
+    NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map_rounded), label: 'Peta'),
+    NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups_rounded), label: 'Jamaah'),
+    NavigationDestination(icon: Icon(Icons.fact_check_outlined), selectedIcon: Icon(Icons.fact_check_rounded), label: 'Operasional'),
+    NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded), label: 'Akun'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
+        final previewingWeb = controller.previewingTravelWebDashboard;
         return Scaffold(
           body: Column(children: [
-            if (controller.hasActiveIncident && !controller.viewingIncident)
+            if (controller.hasActiveIncident && !controller.viewingIncident && !previewingWeb)
               StatusBanner(
-                title: controller.role == PrototypeRole.responder ? 'Rescue aktif' : 'Bantuan sedang berlangsung',
-                message: controller.role == PrototypeRole.responder ? 'Ahmad · ${controller.distance} m' : '${MockData.responder} menuju Anda',
-                action: controller.role == PrototypeRole.responder ? 'KEMBALI KE MAP' : 'LIHAT MAP',
-                onTap: controller.toggleIncidentView,
+                title: controller.viewerRole == ViewerRole.staff
+                    ? 'Rescue aktif'
+                    : 'Bantuan sedang berlangsung',
+                message: controller.viewerRole == ViewerRole.staff
+                    ? '${MockData.pilgrimShort} · ${controller.distance} m'
+                    : '${MockData.responder} menuju Anda',
+                action: controller.viewerRole == ViewerRole.staff
+                    ? 'KEMBALI KE MAP'
+                    : 'LIHAT MAP',
+                onTap: controller.openIncident,
               ),
-            Expanded(child: AnimatedSwitcher(duration: const Duration(milliseconds: 250), child: KeyedSubtree(key: ValueKey('${controller.role}-${controller.state}-${controller.viewingIncident}'), child: _screen()))),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: KeyedSubtree(
+                  key: ValueKey(
+                    '${controller.viewerRole}-${controller.state}-${controller.viewingIncident}-${controller.navigationIndex}-$previewingWeb',
+                  ),
+                  child: _screen(),
+                ),
+              ),
+            ),
           ]),
-          floatingActionButton: null,
-          extendBody: true,
+          floatingActionButton: DebugPanelButton(controller: controller),
+          bottomNavigationBar: previewingWeb ? null : _productNavigation(),
           resizeToAvoidBottomInset: true,
-          bottomNavigationBar: _roleNavigation(),
-          drawerScrimColor: Colors.black38,
         );
       },
     );
   }
 
   Widget _screen() {
-    if (controller.role == PrototypeRole.travelAdmin) return const TravelAdminScreen();
+    if (controller.previewingTravelWebDashboard) {
+      return TravelAdminScreen(onClose: controller.closeTravelWebDashboard);
+    }
 
-    if (!controller.viewingIncident && controller.role == PrototypeRole.pilgrim) return PilgrimHomeScreen(controller: controller);
-    if (!controller.viewingIncident && controller.role == PrototypeRole.responder) return StaffDashboardScreen(controller: controller);
+    if (!controller.viewingIncident) return _productScreen();
 
-    if (controller.state == IncidentState.selectingEmergency || controller.state == IncidentState.confirming) {
+    if ({IncidentState.selectingEmergency, IncidentState.confirming}
+        .contains(controller.state)) {
       return EmergencyTypeScreen(controller: controller);
     }
-    if (controller.state == IncidentState.arrived) return ArrivalScreen(controller: controller);
-    if (controller.state == IncidentState.resolved) return ResolvedScreen(controller: controller);
-    if ({IncidentState.noResponder, IncidentState.offline, IncidentState.poorLocationAccuracy, IncidentState.claimLost}.contains(controller.state)) {
-      return ExceptionStateScreen(controller: controller, state: controller.state);
+
+    if (controller.viewerRole == ViewerRole.pilgrim) {
+      return _pilgrimIncidentScreen();
     }
-    if ({IncidentState.responderCancelled, IncidentState.redispatching}.contains(controller.state)) {
-      return SearchingScreen(controller: controller);
-    }
-    if (controller.role == PrototypeRole.pilgrim) {
-      if (controller.state == IncidentState.dispatching) return SearchingScreen(controller: controller);
-      if ({IncidentState.claimed, IncidentState.enRoute, IncidentState.nearby}.contains(controller.state)) return RescueMapScreen(controller: controller, responderView: false);
-      return PilgrimHomeScreen(controller: controller);
-    }
-    if (controller.role == PrototypeRole.responder) {
-      if (controller.state == IncidentState.dispatching || controller.state == IncidentState.claimed) return IncomingSosScreen(controller: controller);
-      if ({IncidentState.enRoute, IncidentState.nearby}.contains(controller.state)) return RescueMapScreen(controller: controller, responderView: true);
-      return StaffDashboardScreen(controller: controller);
-    }
-    return PilgrimHomeScreen(controller: controller);
+    return _staffIncidentScreen();
   }
 
-  Widget _roleNavigation() {
-    return SafeArea(
-      top: false,
-      child: SizedBox(
-        height: 68,
-        child: Stack(children: [
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: 58,
-              margin: const EdgeInsets.fromLTRB(14, 0, 76, 8),
-              decoration: BoxDecoration(color: ThemeData.light().colorScheme.surface, borderRadius: BorderRadius.circular(22), boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 18)]),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                _RoleButton(icon: Icons.person_rounded, label: 'Jamaah', selected: controller.role == PrototypeRole.pilgrim, onTap: () => controller.chooseRole(PrototypeRole.pilgrim)),
-                _RoleButton(icon: Icons.badge_rounded, label: 'Staff', selected: controller.role == PrototypeRole.responder, onTap: () => controller.chooseRole(PrototypeRole.responder)),
-                _RoleButton(icon: Icons.dashboard_rounded, label: 'Travel', selected: controller.role == PrototypeRole.travelAdmin, onTap: () => controller.chooseRole(PrototypeRole.travelAdmin)),
-              ]),
-            ),
-          ),
-          DebugPanelButton(controller: controller),
-        ]),
-      ),
+  Widget _pilgrimIncidentScreen() {
+    if (controller.state == IncidentState.arrived) {
+      return ArrivalScreen(controller: controller);
+    }
+    if (controller.state == IncidentState.resolved) {
+      return ResolvedScreen(controller: controller);
+    }
+    if ({
+      IncidentState.noResponder,
+      IncidentState.offline,
+      IncidentState.poorLocationAccuracy,
+      IncidentState.claimLost,
+    }.contains(controller.state)) {
+      return ExceptionStateScreen(controller: controller, state: controller.state);
+    }
+    if ({
+      IncidentState.dispatching,
+      IncidentState.responderCancelled,
+      IncidentState.redispatching,
+    }.contains(controller.state)) {
+      return SearchingScreen(controller: controller);
+    }
+    if ({IncidentState.claimed, IncidentState.enRoute, IncidentState.nearby}
+        .contains(controller.state)) {
+      return RescueMapScreen(controller: controller, responderView: false);
+    }
+    return _productScreen();
+  }
+
+  Widget _staffIncidentScreen() {
+    if (controller.state == IncidentState.claimLost) {
+      return ExceptionStateScreen(controller: controller, state: controller.state);
+    }
+    if ({IncidentState.dispatching, IncidentState.claimed}
+        .contains(controller.state)) {
+      return IncomingSosScreen(controller: controller);
+    }
+    if ({IncidentState.enRoute, IncidentState.nearby}
+        .contains(controller.state)) {
+      return RescueMapScreen(controller: controller, responderView: true);
+    }
+    if ({IncidentState.responderCancelled, IncidentState.redispatching}
+        .contains(controller.state)) {
+      return SearchingScreen(controller: controller);
+    }
+    if (controller.state == IncidentState.arrived) {
+      return const _PlaceholderScreen(
+        icon: Icons.hourglass_top_rounded,
+        title: 'Menunggu konfirmasi jamaah',
+        message: 'Jamaah perlu mengonfirmasi bahwa pendamping sudah ditemukan.',
+      );
+    }
+    if ({
+      IncidentState.noResponder,
+      IncidentState.offline,
+      IncidentState.poorLocationAccuracy,
+    }.contains(controller.state)) {
+      return ExceptionStateScreen(controller: controller, state: controller.state);
+    }
+    return _productScreen();
+  }
+
+  Widget _productScreen() {
+    final index = controller.navigationIndex;
+    if (controller.viewerRole == ViewerRole.pilgrim) {
+      if (index == 0) return PilgrimHomeScreen(controller: controller);
+      const data = [
+        (Icons.map_rounded, 'Peta', 'Peta rombongan akan tersedia pada pengembangan berikutnya.'),
+        (Icons.luggage_rounded, 'Perjalanan', 'Detail perjalanan ini masih berupa placeholder prototype.'),
+        (Icons.help_rounded, 'Bantuan', 'Pusat bantuan akan dikembangkan setelah alur SOS tervalidasi.'),
+        (Icons.person_rounded, 'Akun', 'Pengaturan akun masih berupa placeholder prototype.'),
+      ];
+      final item = data[index - 1];
+      return _PlaceholderScreen(icon: item.$1, title: item.$2, message: item.$3);
+    }
+
+    if (index == 0) return StaffDashboardScreen(controller: controller);
+    const data = [
+      (Icons.map_rounded, 'Peta', 'Peta operasional staff masih berupa placeholder prototype.'),
+      (Icons.groups_rounded, 'Jamaah', 'Daftar jamaah akan dikembangkan pada tahap berikutnya.'),
+      (Icons.fact_check_rounded, 'Operasional', 'Fitur operasional masih berupa placeholder prototype.'),
+      (Icons.person_rounded, 'Akun', 'Pengaturan akun staff masih berupa placeholder prototype.'),
+    ];
+    final item = data[index - 1];
+    return _PlaceholderScreen(icon: item.$1, title: item.$2, message: item.$3);
+  }
+
+  Widget _productNavigation() {
+    final pilgrim = controller.viewerRole == ViewerRole.pilgrim;
+    return NavigationBar(
+      selectedIndex: controller.navigationIndex,
+      onDestinationSelected: controller.selectNavigation,
+      destinations: pilgrim ? pilgrimDestinations : staffDestinations,
     );
   }
 }
 
-class _RoleButton extends StatelessWidget {
-  const _RoleButton({required this.icon, required this.label, required this.selected, required this.onTap});
+class _PlaceholderScreen extends StatelessWidget {
+  const _PlaceholderScreen({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
   final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+  final String title;
+  final String message;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    selected: selected,
-    label: 'Mode $label',
-    child: InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 21, color: selected ? const Color(0xFF3A4428) : Colors.grey), Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: selected ? const Color(0xFF3A4428) : Colors.grey))]),
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 82,
+              height: 82,
+              decoration: BoxDecoration(
+                color: AppColors.gold.withValues(alpha: .22),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 40, color: AppColors.olive),
+            ),
+            const SizedBox(height: 22),
+            Text(title, style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ]),
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

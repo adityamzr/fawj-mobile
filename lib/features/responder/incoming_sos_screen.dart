@@ -35,20 +35,20 @@ class IncomingSosScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(controller.emergencyReason, style: const TextStyle(fontSize: 18, color: AppColors.emergency, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 12),
-                const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.groups_rounded, color: AppColors.oliveSoft, size: 20),
-                  SizedBox(width: 6),
-                  Text('Group ${MockData.pilgrimGroup}', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 16),
-                  Icon(Icons.route_rounded, color: AppColors.oliveSoft, size: 20),
-                  SizedBox(width: 6),
-                  Text('320 meter', style: TextStyle(fontSize: 16)),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const Icon(Icons.groups_rounded, color: AppColors.oliveSoft, size: 20),
+                  const SizedBox(width: 6),
+                  const Text('Group ${MockData.pilgrimGroup}', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 16),
+                  const Icon(Icons.route_rounded, color: AppColors.oliveSoft, size: 20),
+                  const SizedBox(width: 6),
+                  Text('${controller.distance} meter', style: const TextStyle(fontSize: 16)),
                 ]),
               ]),
             ),
           ),
           const Spacer(),
-          SizedBox(width: double.infinity, child: FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: AppColors.emergency, minimumSize: const Size(48, 62)), onPressed: controller.claimRequest, icon: const Icon(Icons.volunteer_activism_rounded), label: const Text('SAYA BANTU', style: TextStyle(fontSize: 18)))),
+          SizedBox(width: double.infinity, child: FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: AppColors.emergency, minimumSize: const Size(48, 62)), onPressed: controller.state == IncidentState.claimed ? null : controller.claimRequest, icon: Icon(controller.state == IncidentState.claimed ? Icons.check_circle_rounded : Icons.volunteer_activism_rounded), label: Text(controller.state == IncidentState.claimed ? 'PERMINTAAN DIKLAIM' : 'SAYA BANTU', style: const TextStyle(fontSize: 18)))),
           const SizedBox(height: 10),
           SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: () => _detail(context), icon: const Icon(Icons.info_outline_rounded), label: const Text('LIHAT DETAIL'))),
         ]),
@@ -57,6 +57,26 @@ class IncomingSosScreen extends StatelessWidget {
   }
 
   void _detail(BuildContext context) {
-    showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (context) => const Padding(padding: EdgeInsets.fromLTRB(24, 10, 24, 32), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Detail Permintaan', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22)), SizedBox(height: 16), Text('Ahmad Fulan · Group B01', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)), SizedBox(height: 7), Text('Alasan: Saya tersesat\nJarak awal: 320 meter\nLokasi dibagikan untuk keperluan bantuan.', style: TextStyle(fontSize: 16, height: 1.5))])));
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 10, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Detail Permintaan', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22)),
+            const SizedBox(height: 16),
+            const Text('${MockData.pilgrim} · Group ${MockData.pilgrimGroup}', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 7),
+            Text(
+              'Alasan: ${controller.emergencyReason}\nJarak saat ini: ${controller.distance} meter\nLokasi dibagikan untuk keperluan bantuan.',
+              style: const TextStyle(fontSize: 16, height: 1.5),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

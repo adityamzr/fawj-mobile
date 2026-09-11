@@ -1,92 +1,122 @@
 # FAWJ Flutter UX Prototype v1
 
-Prototype lokal untuk memvalidasi pengalaman pertolongan darurat FAWJ. Seluruh data, perpindahan posisi, pergantian peran, dan status incident disimulasikan di perangkat. Tidak ada backend, API, database, autentikasi, GPS, Google Maps, notifikasi push, analytics, atau integrasi produksi.
+Prototype lokal untuk memvalidasi pengalaman pertolongan darurat FAWJ. Seluruh data, perpindahan posisi, persona demo, dan status incident disimulasikan di perangkat. Tidak ada backend, API, database, autentikasi, GPS, Google Maps, notifikasi push, analytics, atau integrasi produksi.
 
 ## Menjalankan aplikasi
 
 Prasyarat: Flutter stable terbaru, Android Studio/Android SDK untuk Android, dan Xcode untuk iOS.
 
-Project ini sengaja dikirim tanpa file launcher hasil generator SDK karena Flutter SDK tidak tersedia di lingkungan penyusunan. Setelah mengekstrak project, jalankan satu kali:
+Project ini dikirim tanpa launcher hasil generator SDK. Setelah mengekstrak project, jalankan satu kali:
 
 ```bash
-flutter create --platforms=android,ios .
+flutter create --platforms=android,ios,web .
 flutter pub get
 flutter analyze
 flutter test
 flutter run
 ```
 
-Perintah `flutter create` hanya membangkitkan launcher Android/iOS standar; isi aplikasi di `lib/`, konfigurasi paket, dan test tetap dipertahankan.
+Untuk pengujian ringan melalui Chrome dengan tampilan mobile:
 
-### Cara termudah untuk non-developer
+```bash
+flutter run -d chrome
+```
 
-Setiap push ke branch `main` atau `dev` otomatis menjalankan GitHub Actions:
+### Mengunduh APK dari GitHub Actions
+
+Setiap push ke branch `main` atau `dev` menjalankan workflow build Android:
 
 1. Buka tab **Actions** di repository.
-2. Pilih proses **Build Android APK** yang paling baru dan berstatus hijau.
+2. Pilih **Build Android APK** terbaru yang berstatus hijau.
 3. Buka bagian **Artifacts**.
 4. Unduh `fawj-prototype-android`.
-5. Ekstrak ZIP hasil unduhan, lalu pasang `app-release.apk` di Android.
+5. Ekstrak hasil unduhan dan pasang `app-release.apk` di Android.
 
-APK merupakan prototype untuk pengujian internal dan belum didistribusikan melalui Play Store.
+APK hanya untuk pengujian internal dan belum didistribusikan melalui Play Store.
+
+## Navigasi mobile
+
+Jamaah memiliki menu:
+
+- Beranda
+- Peta
+- Perjalanan
+- Bantuan
+- Akun
+
+Staff lapangan—Tour Leader, Muthawwif, atau PIC—memiliki menu:
+
+- Dashboard
+- Peta
+- Jamaah
+- Operasional
+- Akun
+
+Beranda Jamaah, Dashboard Staff, dan alur SOS berfungsi sebagai prototype utama. Menu lainnya masih berupa placeholder ringan. Travel Admin adalah role web dalam arsitektur final dan tidak muncul sebagai role atau tab mobile.
+
+## Prototype Tools
+
+Dalam debug mode, tekan tombol kecil **DEV**. Panel ini khusus pengujian dan tidak tampil pada release build.
+
+Prototype Tools dapat:
+
+- mengganti viewer antara Jamaah dan Staff tanpa mengubah incident;
+- memaksa seluruh state darurat;
+- mereset prototype;
+- membuka **Travel Web Dashboard Preview** untuk presentasi.
+
+Travel preview bukan implementasi dashboard Nuxt dan bukan role aplikasi mobile.
 
 ## Alur demo utama
 
-1. Buka mode **Jamaah**.
-2. Tekan lingkaran merah **BUTUH BANTUAN**.
-3. Pilih **Saya Tersesat**, lalu **KIRIM BANTUAN**.
-4. Layar pencarian tampil selama sekitar 3 detik dan beralih ke mode **Staff**.
-5. Pada incoming SOS, tekan **SAYA BANTU**.
-6. Map lokal mulai menggerakkan marker dari 320 → 240 → 160 → 90 → 40 meter.
+Karena ini demo satu perangkat, persona diganti secara manual melalui Prototype Tools:
+
+1. Dalam mode **Jamaah**, tekan **BUTUH BANTUAN**.
+2. Pilih alasan dan tekan **KIRIM BANTUAN**.
+3. Buka **DEV**, lalu ubah viewer ke **Staff**.
+4. Pada incoming SOS, tekan **SAYA BANTU**.
+5. State berjalan `dispatching → claimed → enRoute` tanpa mengganti persona.
+6. Map lokal menggerakkan marker 320 → 240 → 160 → 90 → 40 meter.
 7. Tekan **SAYA SUDAH TIBA**.
-8. Aplikasi beralih ke jamaah. Tekan **YA, SUDAH**.
-9. Layar **Alhamdulillaah** tampil. Tekan **SELESAI** untuk kembali ke Home normal.
+8. Buka **DEV**, lalu ubah viewer ke **Jamaah**.
+9. Pilih **YA, SUDAH** untuk menyelesaikan bantuan.
+10. Pada layar **Alhamdulillaah**, tekan **SELESAI**.
 
-## Mengganti peran
+## Cabang pengujian
 
-Gunakan navigasi bawah:
+- **Claim Lost:** paksa state `Claim Lost`; Staff dapat kembali aman ke Dashboard.
+- **Responder cancellation:** dari map Staff pilih **Tidak dapat melanjutkan → ALIHKAN**. State bergerak `responderCancelled → redispatching → dispatching`, lalu incoming SOS tersedia kembali tanpa membuat SOS baru.
+- **Persistent incident:** saat rescue aktif, pindah melalui bottom navigation atau pilih **Tutup tampilan map**. Banner merah tetap terlihat dan dapat membuka incident kembali.
+- **No Responder:** tersedia Tour Leader, Kartu Darurat, dan Coba Lagi.
+- **Offline:** menampilkan lokasi terakhir tanpa mengakhiri incident.
+- **Poor Location Accuracy:** hanya menampilkan peringatan akurasi sekitar ±85 meter. Rescue map normal menampilkan akurasi sekitar ±15 meter.
 
-- **Jamaah** — Home, pemilihan SOS, pencarian, map, konfirmasi bertemu.
-- **Staff** — dashboard pendamping, incoming SOS, dan map menuju jamaah.
-- **Travel** — demonstrasi mobile dashboard travel/PPIU masa depan.
+## Model prototype
 
-Pergantian mode tidak menghapus incident aktif.
+`PrototypeController` memisahkan:
 
-## Memicu state pengujian
+- `viewerRole`: Jamaah atau Staff;
+- `incidentState`: status alur pertolongan;
+- navigation index untuk masing-masing viewer;
+- status tampilan incident dan Travel Web Dashboard Preview.
 
-Saat berjalan dalam debug mode, tekan tombol kecil bergambar pengaturan di kanan bawah. Panel ini dapat memaksa state:
+Pergantian viewer melalui Prototype Tools tidak mengubah incident. Navigasi biasa juga tidak mereset incident aktif.
 
-- Idle
-- Pilih SOS / konfirmasi
-- Searching
-- Claimed / En Route / Nearby
-- Arrived / Resolved
-- Claim Lost
-- No Responder
-- Responder Cancelled / Redispatching
-- Offline
-- Poor Location Accuracy
+State prototype ini hanya simulasi UX. Dalam arsitektur produksi, konsep berikut harus dimodelkan secara independen dan dapat aktif bersamaan:
 
-Cabang khusus:
+```text
+incidentState = enRoute
+networkState = offline
+locationQuality = poor
+viewerRole = pilgrim
+```
 
-- **Claim Lost:** paksa `Claim Lost`; tampil pesan bahwa petugas lain sudah menangani permintaan.
-- **Responder cancellation:** saat berada di map Staff, buka menu tiga titik → **Tidak dapat melanjutkan** → **ALIHKAN**. Jamaah melihat pencarian ulang tanpa membuat SOS baru.
-- **Persistent banner:** saat rescue aktif, pilih menu map → **Tutup tampilan map**. Banner merah tetap terlihat dan dapat membuka kembali incident.
-- **No responder:** paksa `No Responder`; tersedia Tour Leader, Kartu Darurat, dan Coba Lagi.
-- **Offline / poor accuracy:** paksa state terkait untuk memeriksa pesan lokasi terakhir dan peringatan akurasi.
-
-## Arsitektur singkat
-
-- `PrototypeController` adalah `ChangeNotifier` tunggal yang menyimpan peran, state incident, jarak, alasan SOS, dan status tampilan map.
-- `PrototypeShell` memilih layar berdasarkan kombinasi peran dan state, sekaligus menjaga banner incident tetap persisten.
-- `MockRescueMap` memakai `CustomPainter` dan marker lokal; tidak memakai provider peta atau GPS.
-- Timer lokal mensimulasikan dispatch dan pergerakan responder.
-- Setiap fitur disimpan dalam foldernya sendiri agar prototype mudah dibaca tanpa membawa arsitektur produksi.
+Enum prototype saat ini tidak boleh disalin langsung menjadi domain model produksi.
 
 ## Batasan prototype
 
-- Semua data akan kembali ke awal setelah aplikasi ditutup.
+- Semua data kembali ke awal setelah aplikasi ditutup.
 - Panggilan, pesan, navigasi eksternal, quick action, dan detail incident hanya memberi respons demo.
 - Tidak ada koordinat geografis, sinkronisasi antarperangkat, atomic claim sungguhan, SLA, audit log, atau mekanisme keamanan produksi.
-- Dashboard Travel adalah representasi mobile saja, bukan aplikasi Nuxt.
-- Logo memakai placeholder teks resmi `FAWJ / فوج` karena aset logo tidak dilampirkan.
+- Mock map memakai `CustomPainter`; tidak ada provider peta atau GPS.
+- Logo memakai placeholder teks `FAWJ / فوج` karena aset logo belum tersedia.

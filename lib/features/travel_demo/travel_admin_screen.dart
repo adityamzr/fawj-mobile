@@ -5,7 +5,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/fawj_brand.dart';
 
 class TravelAdminScreen extends StatelessWidget {
-  const TravelAdminScreen({super.key});
+  const TravelAdminScreen({super.key, required this.onClose});
+
+  final VoidCallback onClose;
 
   static const stats = [
     (Icons.groups_rounded, 'Jamaah', '186'),
@@ -18,9 +20,18 @@ class TravelAdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(20, 20, 20, 100), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const FawjBrand(),
+      Row(children: [
+        const FawjBrand(),
+        const Spacer(),
+        IconButton.filledTonal(onPressed: onClose, icon: const Icon(Icons.close_rounded), tooltip: 'Tutup preview'),
+      ]),
+      const SizedBox(height: 18),
+      const Chip(
+        avatar: Icon(Icons.desktop_windows_rounded, size: 18),
+        label: Text('WEB DASHBOARD PREVIEW', style: TextStyle(fontWeight: FontWeight.w900)),
+      ),
       const SizedBox(height: 26),
-      Text('Dashboard Travel', style: Theme.of(context).textTheme.headlineLarge),
+      Text('Dashboard Travel (Web)', style: Theme.of(context).textTheme.headlineLarge),
       const SizedBox(height: 6),
       const Text(MockData.trip, style: TextStyle(fontSize: 17, color: AppColors.oliveSoft, fontWeight: FontWeight.w600)),
       const SizedBox(height: 22),
@@ -45,7 +56,7 @@ class TravelAdminScreen extends StatelessWidget {
         SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Detail incident adalah tampilan demo.'))), icon: const Icon(Icons.map_rounded), label: const Text('LIHAT INCIDENT'))),
       ]))),
       const SizedBox(height: 12),
-      const Text('Demo mobile untuk gambaran dashboard Nuxt di masa mendatang.', style: TextStyle(fontSize: 14, color: AppColors.oliveSoft)),
+      const Text('Preview presentasi untuk gambaran dashboard Nuxt. Travel Admin bukan role aplikasi mobile.', style: TextStyle(fontSize: 14, color: AppColors.oliveSoft)),
     ])));
   }
 }

@@ -13,7 +13,7 @@ class ExceptionStateScreen extends StatelessWidget {
     final data = switch (state) {
       IncidentState.noResponder => (Icons.support_agent_rounded, 'Belum ada pendamping', 'Kami belum menemukan pendamping yang dapat menuju Anda.'),
       IncidentState.offline => (Icons.wifi_off_rounded, 'Koneksi internet terputus', 'Lokasi terakhir: 13:22\nKami akan memperbarui lokasi ketika koneksi kembali tersedia.'),
-      IncidentState.poorLocationAccuracy => (Icons.gps_off_rounded, 'Lokasi kurang akurat', 'Perkiraan akurasi ±85 meter. Pindahlah ke area terbuka jika aman.'),
+      IncidentState.poorLocationAccuracy => (Icons.gps_off_rounded, 'Lokasi kurang akurat', 'Akurasi sekitar ±85 meter\nPindahlah ke area terbuka jika aman.'),
       IncidentState.claimLost => (Icons.info_rounded, 'Permintaan sudah ditangani', 'Permintaan sudah ditangani oleh petugas lain.'),
       _ => (Icons.sync_rounded, 'Mencari pendamping lain', 'Permintaan Anda tetap aktif. Mohon tetap di lokasi jika aman.'),
     };
@@ -24,10 +24,6 @@ class ExceptionStateScreen extends StatelessWidget {
       Text(data.$2, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
       const SizedBox(height: 12),
       Text(data.$3, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
-      if (state == IncidentState.poorLocationAccuracy) ...[
-        const SizedBox(height: 18),
-        const Card(child: Padding(padding: EdgeInsets.all(15), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.location_searching_rounded, color: AppColors.warning), SizedBox(width: 9), Text('Lokasi akurat ±15 m', style: TextStyle(fontWeight: FontWeight.w800))]))),
-      ],
       const SizedBox(height: 28),
       if (state == IncidentState.noResponder) ...[
         SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: () => _demo(context, 'Menghubungi Tour Leader'), icon: const Icon(Icons.call_rounded), label: const Text('HUBUNGI TOUR LEADER'))),
@@ -36,7 +32,7 @@ class ExceptionStateScreen extends StatelessWidget {
         const SizedBox(height: 10),
         SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: controller.retryDispatch, icon: const Icon(Icons.refresh_rounded), label: const Text('COBA LAGI'))),
       ] else
-        SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: state == IncidentState.claimLost ? () { controller.forceState(IncidentState.idle); controller.chooseRole(PrototypeRole.responder); } : () => controller.forceState(IncidentState.enRoute), icon: const Icon(Icons.arrow_forward_rounded), label: Text(state == IncidentState.claimLost ? 'KEMBALI KE DASHBOARD' : 'LANJUTKAN DEMO'))),
+        SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: state == IncidentState.claimLost ? controller.dismissClaimLost : () => controller.forceState(IncidentState.enRoute), icon: const Icon(Icons.arrow_forward_rounded), label: Text(state == IncidentState.claimLost ? (controller.viewerRole == ViewerRole.staff ? 'KEMBALI KE DASHBOARD' : 'KEMBALI KE BERANDA') : 'LANJUTKAN DEMO'))),
     ])));
   }
 
