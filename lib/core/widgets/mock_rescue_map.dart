@@ -89,7 +89,7 @@ class _Marker extends StatelessWidget {
 class _MapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawColor(const Color(0xFFE8E7DD));
+    canvas.drawColor(const Color(0xFFE8E7DD), BlendMode.srcOver);
     final block = Paint()..color = const Color(0xFFD7D8CE);
     for (var row = 0; row < 4; row++) {
       for (var col = 0; col < 4; col++) {
